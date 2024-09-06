@@ -33,6 +33,7 @@ $ cd /home/share/WISE-3200
 ## Compile
 
 ```
+$ sudo -s
 $ ./build.sh
 ```
 
