@@ -6,6 +6,7 @@ IMAGEDIR=../images
     # check dl file is empty
     if [ $(ls -1 $DIR |wc -l) -lt 10 ]
     then
+		cat dl_part_* > dl.tgz
         tar zxvf dl.tgz -C qsdk/
     else
         echo "$DIR is not empty!"
