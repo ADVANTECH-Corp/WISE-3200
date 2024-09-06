@@ -1,10 +1,9 @@
 # Usage
 
-You can generate the image for WISE-3200 by the following steps.
-
+You can generate the WISE-3200 image and upgrade the firmware by following these steps.
 
 ## Get BSP
-
+Obtain the BSP in your Ubuntu environment.
 ```
 $ cd /home/{user}/share
 $ git clone https://github.com/ADVANTECH-Corp/WISE-3200.git
@@ -12,7 +11,7 @@ $ git clone https://github.com/ADVANTECH-Corp/WISE-3200.git
 
 ## Docker Environment & Setting
 
-Install Docker Engine on your host
+Install the Docker engine on the host to set up the cross-compiler environment
 
 Please refer to [**Docker Installation Guide**](https://docs.docker.com/engine/installation/) for details
 
@@ -49,17 +48,17 @@ These images are for WISE-3200.
 * System upgrade image:
  - *`wise-3200-sysupgrade.bin`*
 
-# Firmware Update
+## Firmware Update
 
 There are two ways to flash the image: one is through the LuCI web interface, and the other is via TFTP.
 
-## Method 1
+### Method 1:
 
 Use wise-3240-sysupgrade.bin file and upgrade firmware reference link as follow
 
 [**LuCI web flash image**](http://ess-wiki.advantech.com.tw/view/IoTGateway/LuCI#Firmware_Update)
 
-## Method 2
+### Method 2:
 **[Kernel & Rootfs]** It can be flashed via TFTP.
 
 1. Put the images into your TFTP
