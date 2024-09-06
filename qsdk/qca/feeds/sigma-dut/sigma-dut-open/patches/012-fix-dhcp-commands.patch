@@ -1,0 +1,58 @@
+--- a/p2p.c
++++ b/p2p.c
+@@ -66,7 +66,7 @@ static void start_dhcp(struct sigma_dut *dut, const char *group_ifname, int go)
+ 			 GO_IP_ADDR);
+ 		run_system(dut, buf);
+ 		snprintf(buf, sizeof(buf),
+-			 "/system/bin/dnsmasq -x /data/dnsmasq.pid --no-resolv --no-poll --dhcp-range=%s,%s,1h",
++			 "dnsmasq -x /var/run/dnsmasq.pid --no-resolv --no-poll --dhcp-range=%s,%s,1h",
+ 			 START_IP_RANGE, END_IP_RANGE);
+ 	} else {
+ #ifdef ANDROID
+@@ -83,7 +83,7 @@ static void start_dhcp(struct sigma_dut *dut, const char *group_ifname, int go)
+ 		}
+ #else /* ANDROID */
+ 		snprintf(buf, sizeof(buf),
+-			 "dhclient -nw -pf /var/run/dhclient-%s.pid %s",
++			 "udhcpc -p /var/run/udhcpc-%s.pid -i %s &",
+ 			 group_ifname, group_ifname);
+ #endif /* ANDROID */
+ 	}
+@@ -101,7 +101,7 @@ static void stop_dhcp(struct sigma_dut *dut, const char *group_ifname, int go)
+ 	struct stat s;
+ 
+ 	if (go) {
+-		snprintf(path, sizeof(path), "/data/dnsmasq.pid");
++		snprintf(path, sizeof(path), "/var/run/dnsmasq.pid");
+ 		sigma_dut_print(dut, DUT_MSG_DEBUG,
+ 				"Kill previous DHCP server: %s", buf);
+ 	} else {
+@@ -122,7 +122,7 @@ static void stop_dhcp(struct sigma_dut *dut, const char *group_ifname, int go)
+ 		snprintf(path, sizeof(path), "/data/misc/dhcp/dhcpcd-%s.pid",
+ 			 group_ifname);
+ #else /* ANDROID */
+-		snprintf(path, sizeof(path), "/var/run/dhclient-%s.pid",
++		snprintf(path, sizeof(path), "/var/run/udhcpc-%s.pid",
+ 			 group_ifname);
+ #endif /* ANDROID */
+ 		sigma_dut_print(dut, DUT_MSG_DEBUG,
+--- a/sta.c
++++ b/sta.c
+@@ -636,7 +636,7 @@ static void kill_dhcp_client(struct sigma_dut *dut, const char *ifname)
+ #ifdef ANDROID
+ 	snprintf(path, sizeof(path), "/data/misc/dhcp/dhcpcd-%s.pid", ifname);
+ #else /* ANDROID */
+-	snprintf(path, sizeof(path), "/var/run/dhclient-%s.pid", ifname);
++	snprintf(path, sizeof(path), "/var/run/udhcpc-%s.pid", ifname);
+ #endif /* ANDROID */
+ 	if (stat(path, &s) == 0) {
+ 		snprintf(buf, sizeof(buf), "kill `cat %s`", path);
+@@ -683,7 +683,7 @@ static int start_dhcp_client(struct sigma_dut *dut, const char *ifname)
+ 	}
+ #else /* ANDROID */
+ 	snprintf(buf, sizeof(buf),
+-		 "dhclient -nw -pf /var/run/dhclient-%s.pid %s",
++		 "udhcpc -p /var/run/udhcpc-%s.pid -i %s &",
+ 		 ifname, ifname);
+ #endif /* ANDROID */
+ 	sigma_dut_print(dut, DUT_MSG_INFO, "Start DHCP client: %s", buf);

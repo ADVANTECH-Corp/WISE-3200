@@ -1,0 +1,264 @@
+--- a/wlan/ar9300/ar9300_reset.c
++++ b/wlan/ar9300/ar9300_reset.c
+@@ -1042,6 +1042,53 @@ ar9300_spur_mitigate_mrc_cck(struct ath_hal *ah, HAL_CHANNEL *chan)
+         AR_PHY_CCK_SPUR_MIT, AR_PHY_CCK_SPUR_MIT_CCK_SPUR_FREQ, 0x0);
+ }
+ 
++static void ar9300_spur_mitigate_ofdm_honeybee(struct ath_hal *ah, int index, int synth_freq)
++{
++	int scale = 10;
++	int freq_offset, mask_index;
++	int sub_spur_freq[2] = { 24180, 24655 };
++
++	if (index > 1)
++		return;
++
++	freq_offset = sub_spur_freq[index] - synth_freq * scale;
++	mask_index = (freq_offset << 4) / (5 * scale);
++
++	if (mask_index < 0)
++		mask_index -= 1;
++	mask_index = mask_index & 0x7f;
++
++	OS_REG_RMW_FIELD(ah,
++			AR_PHY_TIMING4, AR_PHY_TIMING4_IQCAL_LOG_COUNT_MAX, 0xa);
++	OS_REG_RMW_FIELD(ah,
++			AR_PHY_TIMING5, AR_PHY_TIMING5_CYCPWR_THR1, 0x4);
++	OS_REG_RMW_FIELD(ah,
++			AR_PHY_SPUR_REG, AR_PHY_SPUR_REG_SPUR_RSSI_THRESH, 22);
++
++	OS_REG_RMW_FIELD(ah, AR_PHY_PILOT_SPUR_MASK,
++			AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_IDX_B,
++			mask_index);
++
++	/* A == B */
++	OS_REG_RMW_FIELD(ah, AR_PHY_SPUR_MASK_B,
++			AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_IDX_B,
++			mask_index);
++
++	OS_REG_RMW_FIELD(ah, AR_PHY_CHAN_SPUR_MASK,
++			AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_B,
++			mask_index);
++	OS_REG_RMW_FIELD(ah, AR_PHY_PILOT_SPUR_MASK,
++			AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_B, 0xc);
++	OS_REG_RMW_FIELD(ah, AR_PHY_CHAN_SPUR_MASK,
++			AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_B, 0xc);
++
++	/* A == B */
++	OS_REG_RMW_FIELD(ah, AR_PHY_SPUR_MASK_B,
++			AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_B, 0xf0);
++
++	OS_REG_WRITE(ah, AR_PHY_65NM_CH0_BB3, 0x0000e4d8);
++}
++
+ /* Spur mitigation for OFDM */
+ static void
+ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+@@ -1056,17 +1103,25 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+     int i;
+     int mode;
+     u_int8_t* spur_chans_ptr;
++    int scale = 1;
++    int spur_num = 5;
++    int main_spur_freq[2] = { 24040, 24795 };
+ 
+     if (IS_CHAN_5GHZ(chan)) {
+         spur_chans_ptr = ar9300_eeprom_get_spur_chans_ptr(ah, 0);
+         mode = 0;
+     } else {
+-        spur_chans_ptr = ar9300_eeprom_get_spur_chans_ptr(ah, 1);
+-        mode = 1;
++	if (AR_SREV_HONEYBEE(ah)) {
++		scale = 10;
++		spur_num = 2;
++		spur_chans_ptr = main_spur_freq;
++	} else
++		spur_chans_ptr = ar9300_eeprom_get_spur_chans_ptr(ah, 1);
++	mode = 1;
+     }
+ 
+     if (IS_CHAN_HT40(chan)) {
+-        range = 19;
++        range = 19 * scale;
+         if (OS_REG_READ_FIELD(ah, AR_PHY_GEN_CTRL, AR_PHY_GC_DYN2040_PRI_CH)
+             == 0x0)
+         {
+@@ -1075,7 +1130,7 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+             synth_freq = chan->channel + 10;
+         }
+     } else {
+-        range = 10;
++        range = 10 * scale;
+         synth_freq = chan->channel;
+     }
+ 
+@@ -1111,28 +1166,44 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+ 	        AR_PHY_SPUR_MASK_A_DRAGONFLY, AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_A, 0);
+ 	    OS_REG_RMW_FIELD(ah, AR_PHY_SPUR_REG, AR_PHY_SPUR_REG_MASK_RATE_CNTL, 0);
+ 	} else {
+-        OS_REG_RMW_FIELD(ah,
+-            AR_PHY_SPUR_MASK_A, AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_IDX_A, 0);
+-        OS_REG_RMW_FIELD(ah,
+-            AR_PHY_CHAN_SPUR_MASK, AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_A, 0);
+-        OS_REG_RMW_FIELD(ah,
+-            AR_PHY_PILOT_SPUR_MASK, AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_A, 0);
+-        OS_REG_RMW_FIELD(ah,
+-            AR_PHY_CHAN_SPUR_MASK, AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_A, 0);
+-        OS_REG_RMW_FIELD(ah,
+-            AR_PHY_SPUR_MASK_A, AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_A, 0);
+-        OS_REG_RMW_FIELD(ah, AR_PHY_SPUR_REG, AR_PHY_SPUR_REG_MASK_RATE_CNTL, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_SPUR_MASK_A, AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_IDX_A, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_CHAN_SPUR_MASK, AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_A, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_PILOT_SPUR_MASK, AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_A, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_CHAN_SPUR_MASK, AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_A, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_SPUR_MASK_A, AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_A, 0);
++		OS_REG_RMW_FIELD(ah, AR_PHY_SPUR_REG, AR_PHY_SPUR_REG_MASK_RATE_CNTL, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_SPUR_MASK_B, AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_IDX_B, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_SPUR_MASK_B, AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_B, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_PILOT_SPUR_MASK, AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_IDX_B, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_PILOT_SPUR_MASK, AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_B, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_CHAN_SPUR_MASK, AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_B, 0);
++		OS_REG_RMW_FIELD(ah,
++				AR_PHY_CHAN_SPUR_MASK, AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_B, 0);
+ 	}
+     i = 0;
+-    while (spur_chans_ptr[i] && i < 5) {
+-        freq_offset = FBIN2FREQ(spur_chans_ptr[i], mode) - synth_freq;
++    while (spur_chans_ptr[i] && i < spur_num) {
++	    if (AR_SREV_HONEYBEE(ah))
++		    freq_offset = main_spur_freq[i] - synth_freq * scale;
++	    else
++		    freq_offset = FBIN2FREQ(spur_chans_ptr[i], mode) - synth_freq;
++
+         if (abs(freq_offset) < range) {
+-            /*
++	/*
+             printf(
+                 "Spur Mitigation for OFDM: Synth Frequency = %d, "
+                 "Spur Frequency = %d\n",
+                 synth_freq, FBIN2FREQ(spur_chans_ptr[i], mode));
+-             */
++        */
+             if (IS_CHAN_HT40(chan)) {
+                 if (freq_offset < 0) {
+                     if (OS_REG_READ_FIELD(
+@@ -1142,7 +1213,7 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+                     } else {
+                         spur_subchannel_sd = 0;
+                     }
+-                    spur_freq_sd = ((freq_offset + 10) << 9) / 11;
++                    spur_freq_sd = ((freq_offset + 10 * scale) << 9) / (11 * scale);
+                 } else {
+                     if (OS_REG_READ_FIELD(ah,
+                         AR_PHY_GEN_CTRL, AR_PHY_GC_DYN2040_PRI_CH) == 0x0)
+@@ -1151,13 +1222,13 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+                     } else {
+                         spur_subchannel_sd = 1;
+                     }
+-                    spur_freq_sd = ((freq_offset - 10) << 9) / 11;
++                    spur_freq_sd = ((freq_offset - 10 * scale) << 9) / (11 * scale);
+                 }
+-                spur_delta_phase = (freq_offset << 17) / 5;
++                spur_delta_phase = (freq_offset << 17) / (5 * scale);
+             } else {
+                 spur_subchannel_sd = 0;
+-                spur_freq_sd = (freq_offset << 9) / 11;
+-                spur_delta_phase = (freq_offset << 18) / 5;
++                spur_freq_sd = (freq_offset << 9) / (11 * scale);
++                spur_delta_phase = (freq_offset << 18) / (5 * scale);
+             }
+             spur_freq_sd = spur_freq_sd & 0x3ff;
+             spur_delta_phase = spur_delta_phase & 0xfffff;
+@@ -1166,8 +1237,7 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+                 "spur_subchannel_sd = %d, spur_freq_sd = 0x%x, "
+                 "spur_delta_phase = 0x%x\n", spur_subchannel_sd,
+                 spur_freq_sd, spur_delta_phase);
+-             */
+-
++	    */
+             /* OFDM Spur mitigation */
+             OS_REG_RMW_FIELD(ah,
+                 AR_PHY_TIMING4, AR_PHY_TIMING4_ENABLE_SPUR_FILTER, 0x1);
+@@ -1203,7 +1273,7 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+                     AR_PHY_SPUR_REG_ENABLE_NF_RSSI_SPUR_MIT, 1);
+             }
+ 
+-            mask_index = (freq_offset << 4) / 5;
++            mask_index = (freq_offset << 4) / (5 * scale);
+             if (mask_index < 0) {
+                 mask_index = mask_index - 1;
+             }
+@@ -1235,7 +1305,10 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+                 AR_PHY_SPUR_MASK_A, AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_A, 0xa0);
+             OS_REG_RMW_FIELD(ah,
+                 AR_PHY_SPUR_REG, AR_PHY_SPUR_REG_MASK_RATE_CNTL, 0xff);
+-            /*
++
++		if(AR_SREV_HONEYBEE(ah))
++			ar9300_spur_mitigate_ofdm_honeybee(ah, i, synth_freq);
++
+             printf("BB_timing_control_4 = 0x%x\n",
+                 OS_REG_READ(ah, AR_PHY_TIMING4));
+             printf("BB_timing_control_11 = 0x%x\n",
+@@ -1250,7 +1323,6 @@ ar9300_spur_mitigate_ofdm(struct ath_hal *ah, HAL_CHANNEL *chan)
+                 OS_REG_READ(ah, AR_PHY_CHAN_SPUR_MASK));
+             printf("BB_vit_spur_mask_A = 0x%x\n",
+                 OS_REG_READ(ah, AR_PHY_SPUR_MASK_A));
+-             */
+             break;
+         }
+         i++;
+--- a/wlan/ar9300/ar9300phy.h
++++ b/wlan/ar9300/ar9300phy.h
+@@ -293,15 +293,23 @@
+ 
+ /* BB_pilot_spur_mask fields */
+ #define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_IDX_A		0x00000FE0
+-#define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_IDX_A_S	5
++#define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_IDX_A_S		5
+ #define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_A			0x1F
+ #define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_A_S		0
++#define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_IDX_B		0x00FE0000
++#define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_IDX_B_S		17
++#define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_B			0x0001F000
++#define AR_PHY_PILOT_SPUR_MASK_CF_PILOT_MASK_B_S		12
+ 
+ /* BB_chan_spur_mask fields */
+-#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_A	0x00000FE0
+-#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_A_S	5
+-#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_A		0x1F
+-#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_A_S		0
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_A		0x00000FE0
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_A_S		5
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_A			0x1F
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_A_S			0
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_B		0x00FE0000
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_IDX_B_S		17
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_B			0x0001F000
++#define AR_PHY_CHAN_SPUR_MASK_CF_CHAN_MASK_B_S			12
+ 
+ /*
+  * MRC Feild Definitions
+@@ -733,6 +741,12 @@
+ #define AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_A			0x3FF
+ #define AR_PHY_SPUR_MASK_A_CF_PUNC_MASK_A_S			0
+ 
++/* BB_vit_spur_mask_B fields */
++#define AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_IDX_B		0x0001FC00
++#define AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_IDX_B_S		10
++#define AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_B		0x3FF
++#define AR_PHY_SPUR_MASK_B_CF_PUNC_MASK_B_S		0
++
+ /* enable_flt_svd*/
+ #define AR_PHY_ENABLE_FLT_SVD                       0x00001000
+ #define AR_PHY_ENABLE_FLT_SVD_S                     12

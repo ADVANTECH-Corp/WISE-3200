@@ -1,0 +1,55 @@
+--- a/drivers/net/wireless/ath/ath10k/core.c
++++ b/drivers/net/wireless/ath/ath10k/core.c
+@@ -42,6 +42,7 @@ static bool rawmode;
+ bool bug_on_fw_assert = true;
+ bool ath10k_enable_smart_antenna = false;
+ static bool ethernet_mode = true;
++static bool nonaggr_vivo_burst = false;
+ 
+ module_param_named(debug_mask, ath10k_debug_mask, uint, 0644);
+ module_param_named(cryptmode, ath10k_cryptmode_param, uint, 0644);
+@@ -52,6 +53,7 @@ module_param(bug_on_fw_assert, bool, 0644);
+ module_param_named(enable_smart_antenna, ath10k_enable_smart_antenna,
+ 		   bool, 0644);
+ module_param(ethernet_mode, bool, 0644);
++module_param(nonaggr_vivo_burst, bool, 0644);
+ 
+ MODULE_PARM_DESC(debug_mask, "Debugging mask");
+ MODULE_PARM_DESC(uart_print, "Uart target debugging");
+@@ -465,6 +467,24 @@ static int ath10k_init_configure_target(struct ath10k *ar)
+ 		return ret;
+ 	}
+ 
++	/* set WMM_QOS flags*/
++	ret = ath10k_bmi_read32(ar, hi_test_apps_related, &param_host);
++	if (ret) {
++		ath10k_err(ar, "setting firmware QoS (1/2) failed\n");
++		return ret;
++	}
++
++	if (nonaggr_vivo_burst)
++		param_host |= HI_TEST_APPS_WMM_QOS;
++	else
++		param_host &= (~HI_TEST_APPS_WMM_QOS);
++
++	ret = ath10k_bmi_write32(ar, hi_test_apps_related, param_host);
++	if (ret) {
++		ath10k_err(ar, "setting firmware QoS (2/2) failed\n");
++		return ret;
++	}
++
+ 	return 0;
+ }
+ 
+--- a/drivers/net/wireless/ath/ath10k/targaddrs.h
++++ b/drivers/net/wireless/ath/ath10k/targaddrs.h
+@@ -337,6 +337,9 @@ Fw Mode/SubMode Mask
+ #define HI_CONSOLE_FLAGS_UART_SHIFT   0
+ #define HI_CONSOLE_FLAGS_BAUD_SELECT  (1 << 3)
+ 
++/* TEST APPLICATION FLAGS */
++#define  HI_TEST_APPS_WMM_QOS         (0x00000004)
++
+ /* SM power save options */
+ #define HI_SMPS_ALLOW_MASK            (0x00000001)
+ #define HI_SMPS_MODE_MASK             (0x00000002)

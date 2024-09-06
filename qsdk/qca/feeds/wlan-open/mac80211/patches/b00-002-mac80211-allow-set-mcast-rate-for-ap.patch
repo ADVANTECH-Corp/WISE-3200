@@ -1,0 +1,12 @@
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -8320,7 +8320,8 @@ static int nl80211_set_mcast_rate(struct sk_buff *skb, struct genl_info *info)
+ 
+ 	if (dev->ieee80211_ptr->iftype != NL80211_IFTYPE_ADHOC &&
+ 	    dev->ieee80211_ptr->iftype != NL80211_IFTYPE_MESH_POINT &&
+-	    dev->ieee80211_ptr->iftype != NL80211_IFTYPE_OCB)
++	    dev->ieee80211_ptr->iftype != NL80211_IFTYPE_OCB &&
++	    dev->ieee80211_ptr->iftype != NL80211_IFTYPE_AP)
+ 		return -EOPNOTSUPP;
+ 
+ 	if (!rdev->ops->set_mcast_rate)

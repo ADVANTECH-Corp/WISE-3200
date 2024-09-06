@@ -1,0 +1,11 @@
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3843,7 +3843,7 @@ static void ar9003_hw_atten_apply(struct ath_hw *ah, struct ath9k_channel *chan)
+ 
+ 	/* Test value. if 0 then attenuation is unused. Don't load anything. */
+ 	for (i = 0; i < 3; i++) {
+-		if (ah->txchainmask & BIT(i)) {
++		if ((ah->txchainmask & BIT(i)) || (ah->rxchainmask & BIT(i))) {
+ 			value = ar9003_hw_atten_chain_get(ah, i, chan);
+ 			REG_RMW_FIELD(ah, ext_atten_reg[i],
+ 				      AR_PHY_EXT_ATTEN_CTL_XATTEN1_DB, value);

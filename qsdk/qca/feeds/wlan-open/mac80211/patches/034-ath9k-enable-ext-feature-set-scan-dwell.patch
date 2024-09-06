@@ -1,0 +1,11 @@
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -942,6 +942,8 @@ static void ath9k_set_hw_capab(struct ath_softc *sc, struct ieee80211_hw *hw)
+ 			       NL80211_FEATURE_AP_MODE_CHAN_WIDTH_CHANGE |
+ 			       NL80211_FEATURE_P2P_GO_CTWIN;
+ 
++	wiphy_ext_feature_set(hw->wiphy, NL80211_EXT_FEATURE_SET_SCAN_DWELL);
++
+ 	if (!IS_ENABLED(CPTCFG_ATH9K_TX99)) {
+ 		hw->wiphy->interface_modes =
+ 			BIT(NL80211_IFTYPE_P2P_GO) |

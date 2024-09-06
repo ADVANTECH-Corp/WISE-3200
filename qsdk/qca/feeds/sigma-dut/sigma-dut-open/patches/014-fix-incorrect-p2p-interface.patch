@@ -1,0 +1,83 @@
+--- a/p2p.c
++++ b/p2p.c
+@@ -635,7 +635,7 @@ static int cmd_sta_get_p2p_dev_address(struct sigma_dut *dut,
+ 				       struct sigma_conn *conn,
+ 				       struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	char buf[100], resp[200];
+ 
+ 	start_sta_mode(dut);
+@@ -853,7 +853,7 @@ static int cmd_sta_start_autonomous_go(struct sigma_dut *dut,
+ 				       struct sigma_conn *conn,
+ 				       struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "Interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	const char *oper_chn = get_param(cmd, "OPER_CHN");
+ 	const char *ssid_param = get_param(cmd, "SSID");
+ 	int freq, chan, res;
+@@ -1401,7 +1401,7 @@ int wps_connection_event(struct sigma_dut *dut, struct sigma_conn *conn,
+ static int cmd_sta_p2p_dissolve(struct sigma_dut *dut, struct sigma_conn *conn,
+ 				struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	const char *grpid = get_param(cmd, "GroupID");
+ 	struct wfa_cs_p2p_group *grp;
+ 	char buf[128];
+@@ -1436,7 +1436,7 @@ static int cmd_sta_send_p2p_invitation_req(struct sigma_dut *dut,
+ 					   struct sigma_conn *conn,
+ 					   struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	const char *devid = get_param(cmd, "P2PDevID");
+ 	const char *grpid = get_param(cmd, "GroupID");
+ 	const char *reinvoke = get_param(cmd, "Reinvoke");
+@@ -1528,7 +1528,7 @@ static int cmd_sta_accept_p2p_invitation_req(struct sigma_dut *dut,
+ 					     struct sigma_conn *conn,
+ 					     struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "Interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	const char *devid = get_param(cmd, "P2PDevID");
+ 	const char *grpid = get_param(cmd, "GroupID");
+ 	const char *reinvoke = get_param(cmd, "Reinvoke");
+@@ -1572,7 +1572,7 @@ static int cmd_sta_send_p2p_provision_dis_req(struct sigma_dut *dut,
+ 					      struct sigma_conn *conn,
+ 					      struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	const char *conf_method = get_param(cmd, "ConfigMethod");
+ 	const char *devid = get_param(cmd, "P2PDevID");
+ 	char buf[256];
+@@ -1769,7 +1769,7 @@ static int cmd_sta_get_psk(struct sigma_dut *dut, struct sigma_conn *conn,
+ int cmd_sta_p2p_reset(struct sigma_dut *dut, struct sigma_conn *conn,
+ 		      struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	struct wfa_cs_p2p_group *grp, *prev;
+ 	char buf[256];
+ 
+@@ -1923,7 +1923,7 @@ static int cmd_sta_send_p2p_presence_req(struct sigma_dut *dut,
+ 					 struct sigma_conn *conn,
+ 					 struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "Interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	const char *dur = get_param(cmd, "Duration");
+ 	const char *interv = get_param(cmd, "Interval");
+ 	/* const char *grpid = get_param(cmd, "GroupID"); */
+@@ -2040,7 +2040,7 @@ static int cmd_sta_send_service_discovery_req(struct sigma_dut *dut,
+ 					      struct sigma_conn *conn,
+ 					      struct sigma_cmd *cmd)
+ {
+-	const char *intf = get_param(cmd, "Interface");
++	const char *intf = get_p2p_ifname(get_param(cmd, "Interface"));
+ 	const char *devid = get_param(cmd, "P2PDevID");
+ 	char buf[128];
+ 

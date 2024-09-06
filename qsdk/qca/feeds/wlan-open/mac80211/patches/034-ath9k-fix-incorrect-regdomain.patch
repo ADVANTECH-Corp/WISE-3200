@@ -1,0 +1,13 @@
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -1029,6 +1029,10 @@ int ath9k_init_device(u16 devid, struct ath_softc *sc,
+ 	if (error)
+ 		goto deinit;
+ 
++#ifdef CPTCFG_ATH_USER_REGD
++	sc->hw->wiphy->reg_notifier = ath9k_reg_notifier;
++#endif
++
+ 	reg = &common->regulatory;
+ 
+ 	/* Setup TX DMA */

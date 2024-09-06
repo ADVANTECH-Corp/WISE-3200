@@ -1,0 +1,11 @@
+--- a/drivers/net/wireless/ath/ath10k/wmi.c
++++ b/drivers/net/wireless/ath/ath10k/wmi.c
+@@ -2688,7 +2688,7 @@ void ath10k_wmi_pull_peer_stats(const struct wmi_peer_stats *src,
+ {
+ 	ether_addr_copy(dst->peer_macaddr, src->peer_macaddr.addr);
+ 	dst->peer_rssi = __le32_to_cpu(src->peer_rssi);
+-	dst->peer_tx_rate = __le32_to_cpu(src->peer_tx_rate);
++	dst->peer_tx_rate = __le32_to_cpu(src->peer_tx_rate) & 0x1FFFFFFF;
+ }
+ 
+ static void

@@ -1,0 +1,32 @@
+--- a/ap.c
++++ b/ap.c
+@@ -4903,7 +4903,10 @@ static int cmd_ap_config_commit(struct sigma_dut *dut, struct sigma_conn *conn,
+ 		}
+ 
+ 		len += snprintf(ht_caps + len, sizeof(ht_caps) - len, "%s", "[SHORT-GI-20][SHORT-GI-40]");
+-		len += snprintf(ht_caps + len, sizeof(ht_caps) - len, "%s", "[TX-STBC][RX-STBC1]");
++		if (dut->ap_mode == AP_11ng || dut->ap_tx_stbc)
++			len += snprintf(ht_caps + len, sizeof(ht_caps) - len, "%s", "[TX-STBC][RX-STBC1]");
++		else
++			len += snprintf(ht_caps + len, sizeof(ht_caps) - len, "%s", "[RX-STBC1]");
+ 		fprintf(f, "ht_capab=%s\n", ht_caps);
+ 
+ 	}
+@@ -5344,7 +5347,7 @@ static int cmd_ap_config_commit(struct sigma_dut *dut, struct sigma_conn *conn,
+ 				"[SU-BEAMFORMER][SU-BEAMFORMEE][BF-ANTENNA-2][SOUNDING-DIMENSION-2]" : "",
+ 				(dut->ap_ldpc == VALUE_ENABLED) ?
+ 				"[RXLDPC]" : "",
+-				dut->ap_tx_stbc ? "[TX-STBC-2BY1][RX-STBC-1]" : "",
++				dut->ap_tx_stbc ? "[TX-STBC-2BY1][RX-STBC-1]" : "[RX-STBC-1]",
+ 				dut->ap_mu_txBF ? "[MU-BEAMFORMER]" : "");
+ 		}
+ 	}
+@@ -5898,7 +5901,7 @@ static int cmd_ap_reset_default(struct sigma_dut *dut, struct sigma_conn *conn,
+ 		dut->ap_tx_streams = 3;
+ 		dut->ap_vhtmcs_map = 0;
+ 		dut->ap_chwidth = AP_80;
+-		dut->ap_tx_stbc = 1;
++		dut->ap_tx_stbc = 0;
+ 		dut->ap_dyn_bw_sig = VALUE_ENABLED;
+ 		if (get_openwrt_driver_type() == OPENWRT_DRIVER_ATHEROS)
+ 			dut->ap_dfs_mode = AP_DFS_MODE_ENABLED;

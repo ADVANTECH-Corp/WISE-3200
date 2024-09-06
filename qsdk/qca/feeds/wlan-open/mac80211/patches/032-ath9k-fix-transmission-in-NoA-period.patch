@@ -1,0 +1,14 @@
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -154,6 +154,11 @@ void ath9k_wake_tx_queue(struct ieee80211_hw *hw, struct ieee80211_txq *queue)
+ 
+ 	tid->has_queued = true;
+ 	ath_tx_queue_tid(sc, txq, tid);
++
++	if (tid->an->sleeping) {
++		ath_txq_unlock(sc, txq);
++		return;
++	}
+ 	ath_txq_schedule(sc, txq);
+ 
+ 	ath_txq_unlock(sc, txq);
