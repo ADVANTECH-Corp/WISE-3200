@@ -6,7 +6,7 @@ You can generate the WISE-3200 image and upgrade the firmware by following these
 Obtain the BSP in your Ubuntu environment.
 ```
 $ cd /home/{user}/share
-$ git clone https://github.com/ADVANTECH-Corp/WISE-3200.git
+$ git clone https://github.com/ADVANTECH-Corp/WISE-3200
 ```
 
 ## Docker Environment & Setting
@@ -17,16 +17,12 @@ Please refer to [**Docker Installation Guide**](https://docs.docker.com/engine/i
 
 Pull docker image from Docker Hub
 ```
-$ docker pull advrisc/u14.04-4531obv1
-```
-Create Docker container  or  Create Docker container with user share folder
-```
-$ docker run --name wise3200 -it advrisc/u14.04-4531obv1 /bin/bash
+$ sudo docker pull advrisc/u14.04-4531obv1
 ```
 
 Docker command with share folder in user /home/{user}/share
 ```
-$ docker run --name wise3200 -v  /home/{user}/share:/home/share -it advrisc/u14.04-4531obv1 /bin/bash
+$ sudo docker run --name wise3200 -v  /home/{user}/share:/home/share -it advrisc/u14.04-4531obv1 /bin/bash
 $ cd /home/share/WISE-3200
 ```
 
